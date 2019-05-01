@@ -79,7 +79,7 @@ COMMENT ON COLUMN audit.logged_actions.action IS 'Action type; I = insert, D = d
 COMMENT ON COLUMN audit.logged_actions.row_data IS 'Record value. Null for statement-level trigger. For INSERT this is the new tuple. For DELETE and UPDATE it is the old tuple.';
 COMMENT ON COLUMN audit.logged_actions.changed_fields IS 'New values of fields changed by UPDATE. Null except for row-level UPDATE events.';
 COMMENT ON COLUMN audit.logged_actions.statement_only IS '''t'' if audit event is from an FOR EACH STATEMENT trigger, ''f'' for FOR EACH ROW';
-COMMENT ON COLUMN audit.logged_actions.sync_data IS 'Data used by the sync tool. origin = db name of the change, replayed_by = list of db name where the audit item has already been replayed';
+COMMENT ON COLUMN audit.logged_actions.sync_data IS 'Data used by the sync tool. origin = db name of the change, replayed_by = list of db name where the audit item has already been replayed, sync_id=id of the synchronization item';
 
 CREATE INDEX logged_actions_relid_idx ON audit.logged_actions(relid);
 CREATE INDEX logged_actions_action_tstamp_tx_stm_idx ON audit.logged_actions(action_tstamp_stm);
@@ -129,7 +129,17 @@ BEGIN
         'f',                                          -- statement_only
         jsonb_build_object(
             'origin', current_setting('sync.server_from', true),
-            'replayed_by', jsonb_build_array()
+            'replayed_by',
+            CASE
+                WHEN current_setting('sync.server_to', true) IS NOT NULL
+                AND current_setting('sync.sync_id', true) IS NOT NULL
+                    THEN jsonb_build_object(
+                        current_setting('sync.server_to'),
+                        current_setting('sync.sync_id')
+                    )
+                ELSE jsonb_build_object()
+            END
+
         )
     );
 
