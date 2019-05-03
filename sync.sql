@@ -28,21 +28,26 @@ CREATE TABLE IF NOT EXISTS sync.history (
 
 
 -- Add the uid column when needed
---
+-- You can run it for all tables in a schema with
+-- SELECT sync.add_uid_columns(table_schema, table_name) FROM information_schema.tables WHERE table_schema = 'my_schema_name'
 DROP FUNCTION IF EXISTS sync.add_uid_columns( text, text);
 CREATE OR REPLACE FUNCTION sync.add_uid_columns( p_schema_name text, p_table_name text) RETURNS void AS $body$
 DECLARE
   query text;
 BEGIN
 
-    SELECT INTO query
-    concat(
-        ' ALTER TABLE ' || quote_ident(p_schema_name) || '.' || quote_ident(p_table_name) ||
-        ' ADD COLUMN IF NOT EXISTS uid uuid DEFAULT md5(random()::text || clock_timestamp()::text)::uuid ' ||
-        ' UNIQUE NOT NULL'
-    );
-
-    execute query;
+    BEGIN
+        SELECT INTO query
+        concat(
+            ' ALTER TABLE ' || quote_ident(p_schema_name) || '.' || quote_ident(p_table_name) ||
+            ' ADD COLUMN uid uuid DEFAULT md5(random()::text || clock_timestamp()::text)::uuid ' ||
+            ' UNIQUE NOT NULL'
+        );
+        execute query;
+        RAISE NOTICE 'uid column created for % %', quote_ident(p_schema_name), quote_ident(p_table_name);
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'ERROR - uid column already exists';
+    END;
 
 END;
 $body$
@@ -100,3 +105,20 @@ Arguments:
    pevent_id:  The event_id of the event in audit.logged_actions to replay
    puid_column: The name of the column with unique uuid values
 $body$;
+
+
+
+-- PostgreSQL 9.5: add fallback current_setting function
+-- CREATE OR REPLACE FUNCTION public.current_setting(myvar text, myretex boolean) RETURNS text AS $$
+-- DECLARE
+    -- mytext text;
+-- BEGIN
+   -- BEGIN
+      -- mytext := current_setting(myvar)::text;
+   -- EXCEPTION
+      -- WHEN SQLSTATE '42704' THEN
+         -- mytext := NULL;
+   -- END;
+   -- RETURN mytext;
+-- END;
+-- $$ LANGUAGE plpgsql;

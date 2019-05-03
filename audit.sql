@@ -134,8 +134,8 @@ BEGIN
                 WHEN current_setting('sync.server_to', true) IS NOT NULL
                 AND current_setting('sync.sync_id', true) IS NOT NULL
                     THEN jsonb_build_object(
-                        current_setting('sync.server_to'),
-                        current_setting('sync.sync_id')
+                        current_setting('sync.server_to', true),
+                        current_setting('sync.sync_id', true)
                     )
                 ELSE jsonb_build_object()
             END
@@ -270,6 +270,8 @@ BEGIN
                               and a.attnum = any(i.indkey)
           where i.indrelid = target_table::regclass
             and i.indisprimary
+    ON CONFLICT ON CONSTRAINT logged_relations_pkey
+    DO NOTHING
             ;
 END;
 $body$
