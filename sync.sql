@@ -7,7 +7,14 @@ CREATE TABLE IF NOT EXISTS sync.server_metadata (
     server_name text UNIQUE NOT NULL DEFAULT md5(random()::text || clock_timestamp()::text)::uuid
 );
 
--- INSERT INTO sync.server_metadata (server_name) VALUES ('geopoppy_1');
+
+-- Schema to sync (white list)
+DROP TABLE IF EXISTS sync.synchronized_schemas;
+CREATE TABLE IF NOT EXISTS sync.synchronized_schemas (
+    server_id uuid PRIMARY KEY,
+    sync_schemas jsonb NOT NULL
+);
+COMMENT ON TABLE sync.synchronized_schemas IS 'List of schemas to synchronize per slave server id. This list works as a white list. Only listed schemas will be synchronized for each server ids.';
 
 -- Sync history log
 CREATE TABLE IF NOT EXISTS sync.history (
