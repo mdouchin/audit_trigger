@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS sync.history (
     sync_id uuid DEFAULT md5(random()::text || clock_timestamp()::text)::uuid PRIMARY KEY,
     sync_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     server_from text NOT NULL,
-    server_to text,
+    server_to text[],
     min_event_id integer,
     max_event_id integer,
     max_action_tstamp_tx TIMESTAMP WITH TIME ZONE,
